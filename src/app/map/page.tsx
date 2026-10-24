@@ -36,13 +36,14 @@ export default function MapPage() {
         <p className="text-xs uppercase tracking-[0.2em] text-[var(--mute)]">Unified camera map</p>
         <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl">Where each camera looks</h1>
         <p className="mt-3 max-w-lg text-sm leading-6 text-[var(--mute)]">
-          Cones are field of view. Warm markers are cameras. Open circles are incidents — darker fill means no evidence.
+          Cameras across India, framed on load. Zoom into a city to read a camera’s cone.
+          Warm markers are cameras; open circles are incidents — darker fill means no evidence.
         </p>
         <div className="mt-6 h-[520px] overflow-hidden rounded-2xl border border-[var(--line)]">
           <DynamicMap cameras={cameras} incidents={incidents} />
         </div>
       </div>
-      <aside className="space-y-3">
+      <aside className="space-y-3 lg:max-h-[560px] lg:overflow-y-auto lg:pr-1">
         {error && <SetupNotice message={error} />}
         {cameras.map((camera) => (
           <div key={camera.id} className="rounded-2xl border border-[var(--line)] bg-[var(--paper)] p-4">

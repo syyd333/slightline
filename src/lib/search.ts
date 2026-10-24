@@ -20,8 +20,12 @@ export function rankClips(query: string, clips: Clip[], cameras: Camera[]) {
       }
       if (color && hay.includes(color)) score += 2;
       if (object && hay.includes(object)) score += 1.6;
-      if (camera?.status === "online") score += 0.4;
-      if (camera && camera.status !== "online") score -= 1.5;
+
+      // Status only breaks ties between clips that already matched something.
+      if (score > 0) {
+        if (camera?.status === "online") score += 0.4;
+        if (camera && camera.status !== "online") score -= 1.5;
+      }
       return { clip, camera, score };
     })
     .filter((row) => row.score > 0)

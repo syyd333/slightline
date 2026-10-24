@@ -1,6 +1,7 @@
 import { supabase } from "./supabase";
 
-const cameras = [
+// The Hyderabad campus cluster the planner runs on.
+const campusCameras = [
   {
     name: "Main gate",
     zone: "Entry",
@@ -52,6 +53,37 @@ const cameras = [
     status: "online",
   },
 ];
+
+// City cameras across India, so the unified map is a national picture rather
+// than a single campus. Names sort by city; zone stays a functional label.
+const cityCameras = [
+  { name: "Ahmedabad · Sabarmati riverfront", zone: "Riverfront", lat: 23.0258, lng: 72.5806, heading: 70, fov: 80, range_m: 140, status: "online" },
+  { name: "Bengaluru · Majestic bus stand", zone: "Transit", lat: 12.9766, lng: 77.5727, heading: 190, fov: 85, range_m: 110, status: "online" },
+  { name: "Bengaluru · MG Road junction", zone: "Main road", lat: 12.9756, lng: 77.6068, heading: 260, fov: 70, range_m: 100, status: "online" },
+  { name: "Bhopal · Upper Lake ghat", zone: "Lakefront", lat: 23.246, lng: 77.36, heading: 45, fov: 75, range_m: 90, status: "online" },
+  { name: "Chandigarh · Sector 17 plaza", zone: "Market", lat: 30.738, lng: 76.782, heading: 135, fov: 80, range_m: 120, status: "online" },
+  { name: "Chennai · Central station forecourt", zone: "Transit", lat: 13.0827, lng: 80.2757, heading: 20, fov: 85, range_m: 130, status: "online" },
+  { name: "Chennai · Marina promenade", zone: "Beachfront", lat: 13.052, lng: 80.282, heading: 100, fov: 90, range_m: 150, status: "blocked" },
+  { name: "Delhi · Connaught Place", zone: "Market", lat: 28.6315, lng: 77.2167, heading: 300, fov: 75, range_m: 110, status: "online" },
+  { name: "Delhi · India Gate lawns", zone: "Heritage", lat: 28.6129, lng: 77.2295, heading: 250, fov: 80, range_m: 160, status: "online" },
+  { name: "Guwahati · Fancy Bazaar", zone: "Market", lat: 26.184, lng: 91.745, heading: 15, fov: 70, range_m: 90, status: "online" },
+  { name: "Hyderabad · Charminar plaza", zone: "Heritage", lat: 17.3616, lng: 78.4747, heading: 320, fov: 85, range_m: 120, status: "online" },
+  { name: "Hyderabad · Secunderabad station", zone: "Transit", lat: 17.4399, lng: 78.5015, heading: 210, fov: 80, range_m: 130, status: "offline" },
+  { name: "Jaipur · Hawa Mahal lane", zone: "Heritage", lat: 26.9239, lng: 75.8267, heading: 180, fov: 70, range_m: 95, status: "online" },
+  { name: "Kochi · Marine Drive walkway", zone: "Waterfront", lat: 9.971, lng: 76.283, heading: 30, fov: 85, range_m: 110, status: "online" },
+  { name: "Kolkata · Howrah bridge approach", zone: "Bridge", lat: 22.5851, lng: 88.3468, heading: 95, fov: 75, range_m: 120, status: "online" },
+  { name: "Kolkata · Park Street", zone: "Main road", lat: 22.5535, lng: 88.352, heading: 270, fov: 70, range_m: 100, status: "online" },
+  { name: "Lucknow · Hazratganj crossing", zone: "Main road", lat: 26.85, lng: 80.946, heading: 350, fov: 80, range_m: 105, status: "online" },
+  { name: "Mumbai · Bandra station east", zone: "Transit", lat: 19.0544, lng: 72.8403, heading: 60, fov: 85, range_m: 115, status: "online" },
+  { name: "Mumbai · Gateway approach", zone: "Heritage", lat: 18.922, lng: 72.8347, heading: 200, fov: 90, range_m: 140, status: "online" },
+  { name: "Mumbai · Marine Drive", zone: "Waterfront", lat: 18.943, lng: 72.823, heading: 120, fov: 75, range_m: 130, status: "blocked" },
+  { name: "Nagpur · Sitabuldi market", zone: "Market", lat: 21.146, lng: 79.088, heading: 240, fov: 70, range_m: 95, status: "online" },
+  { name: "Patna · Gandhi Maidan", zone: "Open ground", lat: 25.62, lng: 85.14, heading: 45, fov: 85, range_m: 120, status: "offline" },
+  { name: "Pune · Shaniwar Wada gate", zone: "Heritage", lat: 18.5195, lng: 73.8554, heading: 160, fov: 75, range_m: 90, status: "online" },
+  { name: "Visakhapatnam · RK Beach road", zone: "Beachfront", lat: 17.712, lng: 83.32, heading: 85, fov: 90, range_m: 140, status: "online" },
+];
+
+const cameras = [...campusCameras, ...cityCameras];
 
 const sites = [
   { name: "Rear wall junction", lat: 17.30955, lng: 78.4039, cost: 18000, notes: "OSM node near unlit service road" },
@@ -155,22 +187,36 @@ const clipRows = [
   },
 ];
 
-export async function seedIfEmpty() {
+async function runSeed() {
   const { count, error } = await supabase.from("cameras").select("*", { count: "exact", head: true });
   if (error) throw error;
-  if ((count ?? 0) > 0) return { seeded: false };
+  // The upserts below are idempotent, so an existing partial dataset (for example
+  // before the city cameras were added) is topped up rather than skipped.
+  if ((count ?? 0) >= cameras.length) return { seeded: false };
 
-  const { data: cameraRows, error: camErr } = await supabase.from("cameras").insert(cameras).select();
+  // Upserts against the unique indexes in the seed_guard migration: if two mounts
+  // race, the loser inserts nothing instead of duplicating the demo dataset.
+  const { data: cameraRows, error: camErr } = await supabase
+    .from("cameras")
+    .upsert(cameras, { onConflict: "name", ignoreDuplicates: true })
+    .select("id, name");
   if (camErr) throw camErr;
 
-  const { error: siteErr } = await supabase.from("candidate_sites").insert(sites);
+  const { error: siteErr } = await supabase
+    .from("candidate_sites")
+    .upsert(sites, { onConflict: "name", ignoreDuplicates: true });
   if (siteErr) throw siteErr;
 
-  const { error: incErr } = await supabase.from("incidents").insert(incidents);
+  const { error: incErr } = await supabase
+    .from("incidents")
+    .upsert(incidents, { onConflict: "title,occurred_at", ignoreDuplicates: true });
   if (incErr) throw incErr;
 
-  const byName = new Map((cameraRows ?? []).map((c) => [c.name, c.id]));
-  const { error: clipErr } = await supabase.from("clips").insert(
+  const { data: allCameras, error: listErr } = await supabase.from("cameras").select("id, name");
+  if (listErr) throw listErr;
+  const byName = new Map((allCameras ?? cameraRows ?? []).map((c) => [c.name, c.id]));
+
+  const { error: clipErr } = await supabase.from("clips").upsert(
     clipRows.map((clip) => ({
       camera_id: byName.get(clip.cameraName) ?? null,
       captured_at: clip.captured_at,
@@ -178,8 +224,11 @@ export async function seedIfEmpty() {
       tags: clip.tags,
       attributes: clip.attributes,
     })),
+    { onConflict: "description,captured_at", ignoreDuplicates: true },
   );
   if (clipErr) throw clipErr;
+
+  if ((cameraRows ?? []).length === 0) return { seeded: false };
 
   await supabase.from("access_logs").insert({
     action: "seed",
@@ -187,4 +236,17 @@ export async function seedIfEmpty() {
   });
 
   return { seeded: true };
+}
+
+let pending: Promise<{ seeded: boolean }> | null = null;
+
+/** Seeds the demo dataset once, sharing one request across every caller. */
+export function seedIfEmpty() {
+  if (!pending) {
+    pending = runSeed().catch((err) => {
+      pending = null;
+      throw err;
+    });
+  }
+  return pending;
 }

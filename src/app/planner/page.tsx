@@ -98,7 +98,13 @@ export default function PlannerPage() {
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.3fr_0.9fr]">
         <div className="h-[480px] overflow-hidden rounded-2xl border border-[var(--line)]">
-          <DynamicMap cameras={cameras} incidents={incidents} sites={sites} selectedIds={selectedIds} />
+          <DynamicMap
+            cameras={cameras}
+            incidents={incidents}
+            sites={sites}
+            selectedIds={selectedIds}
+            autoFit={false}
+          />
         </div>
         <div className="space-y-3">
           {(selected.length ? selected : []).map((site) => (

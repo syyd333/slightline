@@ -2,16 +2,17 @@
 @import "leaflet/dist/leaflet.css";
 
 :root {
-  --sand: #f3eadc;
-  --paper: #fffcf7;
-  --ink: #1c1917;
-  --mute: #8a7f72;
-  --line: #e6ddd0;
-  --accent: #c45c3e;
-  --accent-soft: #f4e4dc;
-  --online: #3f5e4a;
-  --offline: #9a8f82;
-  --blocked: #b45309;
+  --sand: #f6f1e7;
+  --paper: #ffffff;
+  --ink: #16130f;
+  --mute: #7c7266;
+  --line: #e8e1d3;
+  --line-strong: #d9d0bf;
+  --accent: #a9613f;
+  --accent-soft: #f3e6dd;
+  --online: #4c6352;
+  --offline: #9c9285;
+  --blocked: #a8763c;
   --background: var(--sand);
   --foreground: var(--ink);
 }
@@ -30,10 +31,28 @@ body {
 body {
   font-family: var(--font-sans), sans-serif;
   min-height: 100%;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+
+.font-display {
+  font-family: var(--font-display), Georgia, serif;
+  letter-spacing: -0.015em;
+}
+
+.rule-label {
+  font-size: 0.6875rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--mute);
 }
 
 .leaflet-container {
-  background: #efe6d8;
+  background: #f1ebdf;
   font-family: var(--font-sans), sans-serif;
 }
 
@@ -41,4 +60,20 @@ body {
   border-radius: 12px;
   box-shadow: none;
   border: 1px solid var(--line);
+  color: var(--ink);
+}
+
+.leaflet-popup-content {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  margin: 0.7rem 0.9rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
 }

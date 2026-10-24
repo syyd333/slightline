@@ -17,6 +17,7 @@ export function DynamicMap(props: {
   incidents?: Incident[];
   sites?: CandidateSite[];
   selectedIds?: string[];
+  autoFit?: boolean;
 }) {
   return <CameraMap {...props} />;
 }

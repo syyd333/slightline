@@ -10,6 +10,8 @@ type Props = {
   incidents?: Incident[];
   sites?: CandidateSite[];
   selectedIds?: string[];
+  /** Frame every camera and incident on load. Turn off to keep the campus view. */
+  autoFit?: boolean;
 };
 
 function conePoints(camera: Camera) {
@@ -27,7 +29,13 @@ function conePoints(camera: Camera) {
   return points;
 }
 
-export function CameraMap({ cameras, incidents = [], sites = [], selectedIds = [] }: Props) {
+export function CameraMap({
+  cameras,
+  incidents = [],
+  sites = [],
+  selectedIds = [],
+  autoFit = true,
+}: Props) {
   useEffect(() => {
     const map = L.map("sightline-map", {
       center: [CAMPUS_CENTER.lat, CAMPUS_CENTER.lng],
@@ -35,9 +43,17 @@ export function CameraMap({ cameras, incidents = [], sites = [], selectedIds = [
       zoomControl: false,
     });
 
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-      attribution: "&copy; OSM &copy; CARTO",
-    }).addTo(map);
+    // Keyed CARTO Voyager basemap. Falls back to the muted light style if no key is set.
+    const cartoKey = process.env.NEXT_PUBLIC_CARTO_KEY;
+    L.tileLayer(
+      cartoKey
+        ? `https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=${cartoKey}`
+        : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+      {
+        attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
+        maxZoom: 20,
+      },
+    ).addTo(map);
 
     L.control.zoom({ position: "bottomright" }).addTo(map);
 
@@ -89,10 +105,22 @@ export function CameraMap({ cameras, incidents = [], sites = [], selectedIds = [
         .addTo(map);
     });
 
+    if (autoFit) {
+      const points: [number, number][] = [
+        ...cameras.map((camera) => [camera.lat, camera.lng] as [number, number]),
+        ...incidents.map((incident) => [incident.lat, incident.lng] as [number, number]),
+      ];
+      if (points.length > 1) {
+        map.fitBounds(L.latLngBounds(points), { padding: [36, 36], maxZoom: 17 });
+      } else if (points.length === 1) {
+        map.setView(points[0], 16);
+      }
+    }
+
     return () => {
       map.remove();
     };
-  }, [cameras, incidents, sites, selectedIds]);
+  }, [cameras, incidents, sites, selectedIds, autoFit]);
 
   return <div id="sightline-map" className="h-full min-h-[420px] w-full rounded-2xl" />;
 }

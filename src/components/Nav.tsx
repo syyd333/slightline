@@ -10,31 +10,32 @@ const links = [
   { href: "/search", label: "Search" },
   { href: "/incidents", label: "Incidents" },
   { href: "/logs", label: "Logs" },
+  { href: "/about", label: "Pitch" },
 ];
 
 export function Nav() {
   const path = usePathname();
 
   return (
-    <header className="sticky top-0 z-20 border-b border-[var(--line)] bg-[color-mix(in_srgb,var(--paper)_86%,transparent)] backdrop-blur-md">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-4">
-        <Link href="/" className="flex items-center gap-2.5 text-[var(--ink)]">
+    <header className="sticky top-0 z-20 border-b border-[var(--line)] bg-[color-mix(in_srgb,var(--paper)_90%,transparent)] backdrop-blur-md">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3.5 sm:px-6">
+        <Link href="/" className="flex shrink-0 items-center gap-2.5 text-[var(--ink)]">
           <Mark />
           <span className="font-[family-name:var(--font-display)] text-xl tracking-tight">
             SightLine
           </span>
         </Link>
-        <nav className="flex items-center gap-1 text-sm">
+        <nav className="-mr-1 flex items-center gap-0.5 overflow-x-auto text-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {links.map((link) => {
             const active = path === link.href;
             return (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`rounded-full px-3 py-1.5 transition ${
+                className={`shrink-0 rounded-full px-3 py-1.5 transition ${
                   active
-                    ? "bg-[var(--paper)] text-[var(--ink)] shadow-sm"
-                    : "text-[var(--mute)] hover:text-[var(--ink)]"
+                    ? "bg-[var(--sand)] text-[var(--ink)]"
+                    : "text-[var(--mute)] hover:bg-[var(--sand)] hover:text-[var(--ink)]"
                 }`}
               >
                 {link.label}
